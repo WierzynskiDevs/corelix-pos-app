@@ -20,9 +20,21 @@ O Corelix POS permite operar vendas em dispositivos móveis, tablets e web, com 
   - Cálculo de troco para pagamento em dinheiro.  
   - Tela de sucesso com resumo e opções de imprimir e nova venda.
 
+- **Caixa (Fechamento financeiro)**  
+  - Fluxo do diagrama: Fechamento caixa → Conferência valores → Diferença? → Ajuste e justificativa → Confirmar fechamento → Relatório diário.  
+  - CRUD completo (criar, listar, visualizar, editar, excluir) com dados mockados na API.  
+  - Aba **Caixa** na navegação; listagem, detalhe, formulários de novo e edição.
+
+- **Estoque (controle de estoque)**  
+  - **Autenticação:** login Admin (admin / admin123) e GU – Gerente de Unidade (gu / gu123). No header do dashboard (aba Estoque) aparece o usuário autenticado e botão Sair.  
+  - **Produtos:** CRUD com Id, Nome, Descrição, Valor, Valor Final (valor − desconto %), Fornecedor, Código de barras, Valor de compra (não editável), Desconto (%), Quantidade em estoque, Quantidade em pedidos. Quantidade em pedidos nunca maior que estoque. Alerta na listagem quando estoque &lt; 50.  
+  - **Fornecedores:** CRUD com Id, CNPJ, Razão Social, Endereço, Telefone.  
+  - **Pedidos:** criar pedido com itens (produto, quantidade), forma de pagamento (PIX, Crédito, Débito, VR, VA). O pedido consome estoque (reduz quantidade em estoque e aumenta quantidade em pedidos), gera código (ex.: PED-1000) e permite gerar PDF/impressão do resumo (versão web).  
+  - Dashboard na aba **Estoque** com resumo de produtos (e alerta &lt; 50), fornecedores e acesso a pedidos.
+
 - **Navegação**  
-  - Abas: **Home** (PDV) e **Explore** (tela auxiliar).  
-  - Rota `/payment` para o fluxo de pagamento.
+  - Abas: **Home** (PDV), **Explore**, **Caixa** e **Estoque**.  
+  - Rota `/payment` para o fluxo de pagamento. Login em `/login` (obrigatório para usar o app).
 
 ## Tecnologias
 
@@ -42,12 +54,28 @@ corelix-pos-app/
 │   ├── (tabs)/             # Abas (Home, Explore)
 │   │   ├── _layout.tsx     # Layout das abas
 │   │   ├── index.tsx       # PDV
-│   │   └── explore.tsx     # Explore
+│   │   ├── explore.tsx     # Explore
+│   │   └── caixa/          # Fechamento de caixa (CRUD)
+│   │       ├── _layout.tsx
+│   │       ├── index.tsx   # Listagem
+│   │       ├── novo.tsx    # Criar
+│   │       └── [id]/       # Detalhe e editar
 │   ├── payment/
 │   │   └── index.tsx       # Tela de pagamento
 │   └── modal.tsx
+├── server/                  # API mock (Express)
+│   ├── index.js             # Entrada, CORS
+│   ├── routes/caixa.js       # CRUD Fechamento de Caixa
+│   ├── routes/fornecedores.js # CRUD Fornecedores
+│   ├── routes/produtos.js    # CRUD Produtos (valor final = valor − desconto %)
+│   ├── routes/pedidos.js     # Criar pedido (consome estoque, gera código)
+│   ├── routes/auth.js       # Login Admin / GU
+│   └── store.js              # Store compartilhado produtos (pedidos alteram estoque)
+├── contexts/                  # AuthContext (user, login, logout)
+├── services/                  # API: caixa, auth, fornecedores, produtos, pedidos
+├── utils/                     # pedidoPdf (HTML/impressão resumo pedido)
 ├── components/             # Componentes reutilizáveis
-├── constants/               # Tema, cores, fontes
+├── constants/               # Tema, cores, fontes, API
 ├── hooks/                   # Hooks (ex.: useColorScheme)
 ├── assets/                  # Ícones, imagens, splash
 ├── app.json                # Configuração Expo
@@ -69,13 +97,25 @@ corelix-pos-app/
    npm install
    ```
 
-2. **Iniciar o projeto**
+2. **Iniciar a API (Fechamento de Caixa)**
+
+   Em um terminal:
+
+   ```bash
+   npm run server
+   ```
+
+   A API sobe em `http://localhost:3001` (GET/POST/PUT/DELETE em `/api/caixa`).
+
+3. **Iniciar o projeto**
+
+   Em outro terminal:
 
    ```bash
    npx expo start
    ```
 
-3. **Abrir o app**
+4. **Abrir o app**
 
    - **Web:** no terminal, pressione `w` ou acesse a URL exibida.  
    - **Android:** pressione `a` ou escaneie o QR code com o Expo Go.  
@@ -87,13 +127,15 @@ corelix-pos-app/
 - `npm run web` — inicia no modo web.  
 - `npm run android` — inicia no Android.  
 - `npm run ios` — inicia no iOS.  
-- `npm run lint` — executa o ESLint.
+- `npm run lint` — executa o ESLint.  
+- `npm run server` — inicia a API mock em `http://localhost:3001` (CRUD Caixa).
 
 ## Configuração
 
 - **App:** nome, slug, versão e ícones em `app.json`.  
 - **Tema:** cores e estilos em `constants/theme.ts` (ou equivalente em `constants/`).  
-- **Produtos (mock):** definidos na tela do PDV em `app/(tabs)/index.tsx`; em produção podem vir de API ou banco.
+- **Produtos (mock):** definidos na tela do PDV em `app/(tabs)/index.tsx`; em produção podem vir de API ou banco.  
+- **API Caixa:** base URL em `constants/api.ts` (web: `localhost:3001`). Para dispositivo físico, altere para o IP da máquina.
 
 ## Observação sobre a pasta `.expo`
 
